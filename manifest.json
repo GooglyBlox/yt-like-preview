@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Like Preview",
+  "version": "1.0.0",
+  "description": "Displays like counts directly on YouTube video thumbnails",
+  "permissions": [],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://m.youtube.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
