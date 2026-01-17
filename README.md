@@ -2,6 +2,9 @@
 
 Chrome extension that displays like counts in video metadata across YouTube.
 
+![Screenshot of YouTube Like Preview extension in action](assets/image.png)
+
+
 ## Installation
 
 1. Clone or download this repository

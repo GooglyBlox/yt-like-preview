@@ -14,7 +14,7 @@
         "https://www.youtube.com/*",
         "https://m.youtube.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["scripts/content.js"],
       "run_at": "document_idle"
     }
   ]
