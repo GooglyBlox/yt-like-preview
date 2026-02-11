@@ -8,7 +8,8 @@
     'ytd-grid-video-renderer',
     'ytd-playlist-video-renderer',
     'yt-lockup-view-model',
-    'ytm-shorts-lockup-view-model'
+    'ytm-shorts-lockup-view-model',
+    '.ytp-modern-videowall-still'
   ].join(',');
 
   const likesCache = new Map();
@@ -70,6 +71,11 @@
   };
 
   const getVideoId = (el) => {
+    if (el.classList.contains('ytp-modern-videowall-still') && el.href) {
+      const match = el.href.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
+      if (match) return match[1];
+    }
+
     const lockup = el.querySelector('.yt-lockup-view-model[class*="content-id-"]') ||
       el.closest('.yt-lockup-view-model[class*="content-id-"]');
     if (lockup) {
@@ -82,6 +88,10 @@
   };
 
   const getMetadataRow = (el) => {
+    if (el.classList.contains('ytp-modern-videowall-still')) {
+      return el.querySelector('.ytp-modern-videowall-still-info-content');
+    }
+
     for (const row of el.querySelectorAll('.yt-content-metadata-view-model__metadata-row')) {
       if (/views|watching/i.test(row.textContent)) return row;
     }
@@ -90,23 +100,56 @@
   };
 
   const clearLikesElements = (row) => {
+    const isPlayerSuggestion = row.classList.contains('ytp-modern-videowall-still-info-content');
+    if (isPlayerSuggestion) {
+      const viewCountSpan = row.querySelector('.ytp-modern-videowall-still-view-count-and-date-info');
+      if (viewCountSpan?.dataset.originalText) {
+        viewCountSpan.textContent = viewCountSpan.dataset.originalText;
+        delete viewCountSpan.dataset.originalText;
+      }
+      return;
+    }
+
     for (const node of row.querySelectorAll('.yt-likes-ext')) {
       node.remove();
     }
   };
 
   const createLikesSpan = (row, likes) => {
+    const isPlayerSuggestion = row.classList.contains('ytp-modern-videowall-still-info-content');
     const existingSpan = row.querySelector('.yt-core-attributed-string, .inline-metadata-item');
     const span = document.createElement('span');
-    span.className = `${existingSpan?.className ?? 'yt-core-attributed-string'} yt-likes-ext`;
+    
+    if (isPlayerSuggestion) {
+      span.className = 'ytp-modern-videowall-still-view-count-and-date-info yt-likes-ext';
+    } else {
+      span.className = `${existingSpan?.className ?? 'yt-core-attributed-string'} yt-likes-ext`;
+    }
+    
     span.textContent = `${formatCount(likes)} likes`;
     return span;
   };
 
   const insertLikesElement = (row, span) => {
+    const isPlayerSuggestion = row.classList.contains('ytp-modern-videowall-still-info-content');
     const isShorts = row.classList.contains('shortsLockupViewModelHostMetadataSubhead');
     const isMetadataLine = row.id === 'metadata-line';
     const inlineItems = row.querySelectorAll('.inline-metadata-item');
+
+    if (isPlayerSuggestion) {
+      const viewCountSpan = row.querySelector('.ytp-modern-videowall-still-view-count-and-date-info');
+      if (viewCountSpan && !viewCountSpan.dataset.originalText) {
+        viewCountSpan.dataset.originalText = viewCountSpan.textContent;
+        const text = viewCountSpan.textContent;
+        const match = text.match(/^(.+?\s+views\s*•\s*)(.+)$/);
+        if (match) {
+          viewCountSpan.textContent = `${match[1]}${span.textContent} • ${match[2]}`;
+        } else {
+          viewCountSpan.textContent = `${text} • ${span.textContent}`;
+        }
+      }
+      return;
+    }
 
     if (isMetadataLine && inlineItems.length >= 2) {
       row.insertBefore(span, inlineItems[inlineItems.length - 1]);
@@ -140,8 +183,14 @@
 
     if (prevVideoId) {
       clearLikesElements(row);
-    } else if (row.querySelector('.yt-likes-ext')) {
-      return;
+    } else {
+      const isPlayerSuggestion = row.classList.contains('ytp-modern-videowall-still-info-content');
+      if (isPlayerSuggestion) {
+        const viewCountSpan = row.querySelector('.ytp-modern-videowall-still-view-count-and-date-info');
+        if (viewCountSpan?.dataset.originalText) return;
+      } else if (row.querySelector('.yt-likes-ext')) {
+        return;
+      }
     }
 
     processingElements.add(el);
