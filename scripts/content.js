@@ -76,8 +76,8 @@
       if (match) return match[1];
     }
 
-    const lockup = el.querySelector('.yt-lockup-view-model[class*="content-id-"]') ||
-      el.closest('.yt-lockup-view-model[class*="content-id-"]');
+    const lockup = el.querySelector('[class*="content-id-"]') ||
+      el.closest('[class*="content-id-"]');
     if (lockup) {
       const match = lockup.className.match(/content-id-([a-zA-Z0-9_-]{11})/);
       if (match) return match[1];
@@ -87,12 +87,21 @@
       extractVideoId(el, 'a[href*="/shorts/"]', /\/shorts\/([a-zA-Z0-9_-]{11})/);
   };
 
+  const METADATA_ROW_SELECTOR =
+    '.yt-content-metadata-view-model__metadata-row, .ytContentMetadataViewModelMetadataRow';
+  const DELIMITER_SELECTOR =
+    '.yt-content-metadata-view-model__delimiter, .ytContentMetadataViewModelDelimiter';
+
+  const isDelimiter = (el) =>
+    el.classList.contains('yt-content-metadata-view-model__delimiter') ||
+    el.classList.contains('ytContentMetadataViewModelDelimiter');
+
   const getMetadataRow = (el) => {
     if (el.classList.contains('ytp-modern-videowall-still')) {
       return el.querySelector('.ytp-modern-videowall-still-info-content');
     }
 
-    for (const row of el.querySelectorAll('.yt-content-metadata-view-model__metadata-row')) {
+    for (const row of el.querySelectorAll(METADATA_ROW_SELECTOR)) {
       if (/views|watching/i.test(row.textContent)) return row;
     }
     return el.querySelector('.shortsLockupViewModelHostMetadataSubhead') ??
@@ -117,15 +126,17 @@
 
   const createLikesSpan = (row, likes) => {
     const isPlayerSuggestion = row.classList.contains('ytp-modern-videowall-still-info-content');
-    const existingSpan = row.querySelector('.yt-core-attributed-string, .inline-metadata-item');
+    const existingSpan = row.querySelector(
+      '.yt-core-attributed-string, .ytAttributedStringHost, .inline-metadata-item'
+    );
     const span = document.createElement('span');
-    
+
     if (isPlayerSuggestion) {
       span.className = 'ytp-modern-videowall-still-view-count-and-date-info yt-likes-ext';
     } else {
-      span.className = `${existingSpan?.className ?? 'yt-core-attributed-string'} yt-likes-ext`;
+      span.className = `${existingSpan?.className ?? 'ytAttributedStringHost'} yt-likes-ext`;
     }
-    
+
     span.textContent = `${formatCount(likes)} likes`;
     return span;
   };
@@ -156,12 +167,17 @@
       return;
     }
 
+    const existingDelim = row.querySelector(DELIMITER_SELECTOR);
+    const delimClass = existingDelim?.className.split(/\s+/).find(c =>
+      c === 'yt-content-metadata-view-model__delimiter' || c === 'ytContentMetadataViewModelDelimiter'
+    ) ?? 'ytContentMetadataViewModelDelimiter';
+
     const delimiter = document.createElement('span');
-    delimiter.className = isShorts ? 'yt-likes-ext' : 'yt-content-metadata-view-model__delimiter yt-likes-ext';
+    delimiter.className = isShorts ? 'yt-likes-ext' : `${delimClass} yt-likes-ext`;
     delimiter.textContent = ' • ';
 
     const children = [...row.children];
-    const lastDelimIdx = children.findLastIndex(c => c.classList.contains('yt-content-metadata-view-model__delimiter'));
+    const lastDelimIdx = children.findLastIndex(c => isDelimiter(c));
 
     if (lastDelimIdx > 0) {
       row.insertBefore(delimiter, children[lastDelimIdx]);
